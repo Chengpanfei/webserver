@@ -3,4 +3,4 @@ project(webserver)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(webserver main.cpp)
+add_executable(webserver main.cpp WebServer.cpp WebServer.h ServerSocket.cpp ServerSocket.h SocketException.cpp SocketException.h EventLoop.cpp EventLoop.h Socket.cpp Socket.h ByteBuffer.cpp ByteBuffer.h Handler.h HttpDecoder.cpp HttpDecoder.h Message.h HttpResponse.h HttpResponse.cpp HttpRequest.h HttpRequest.cpp)
