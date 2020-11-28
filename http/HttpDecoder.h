@@ -21,6 +21,8 @@ public:
 
     void onClose(Socket &socket) override;
 
+    void onComplete(Socket &socket) override;
+
 };
 
 

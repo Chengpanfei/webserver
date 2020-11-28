@@ -11,7 +11,7 @@
 
 using namespace std;
 
-class HttpResponse: public Message {
+class HttpResponse : public Message {
 private:
     string version;
     string code;
@@ -72,6 +72,15 @@ public:
 
     void setSendFileName(const string &sendFileName);
 
+    void reset() {
+        if (contentPtr != nullptr) {
+            free(contentPtr);
+            contentPtr = nullptr;
+        }
+        sendFileOn = false;
+        msg = "OK";
+        code = "200";
+    }
 };
 
 

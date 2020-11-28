@@ -12,25 +12,40 @@
 
 using namespace std;
 
-enum class ParseState{EXPECT_REQUEST_LINE, PARSING_HEADER};
+enum class ParseState {
+    EXPECT_REQUEST_LINE, PARSING_HEADER, PARSING_CONTENT
+};
 
 
-class HttpRequest: public Message {
+class HttpRequest : public Message {
 private:
-     ParseState status;
-     string method; //
-     string path;
-     string query;
-     string version;
+    ParseState status;
+    string method; //
+    string path;
+    string query;
+    string version;
 
-     int ip;
-     short port;
+    char *contentPtr;
+    unsigned int contentLength;
+    unsigned int receivedLength;
+
+    int ip;
+    short port;
 
     unordered_map<string, string> headers;
+
+    HttpRequest(const HttpRequest &req);
+
+    HttpRequest &operator=(const HttpRequest &req);
 
 public:
     HttpRequest();
 
+    ~HttpRequest() override {
+        if (contentPtr) free(contentPtr);
+    }
+
+    void reset();
     ParseState getStatus() const;
 
     void setStatus(const ParseState &status);
@@ -62,6 +77,18 @@ public:
     const unordered_map<string, string> &getHeaders() const;
 
     void setHeader(const string &head, const string &val);
+
+    char *getContentPtr() const;
+
+    void setContentPtr(char *contentPtr);
+
+    unsigned int getContentLength() const;
+
+    void setContentLength(unsigned int contentLength);
+
+    unsigned int getReceivedLength() const;
+
+    void setReceivedLength(unsigned int receivedLength);
 
     friend ostream &operator<<(ostream &os, const HttpRequest &request);
 };

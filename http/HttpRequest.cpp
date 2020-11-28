@@ -82,3 +82,36 @@ ostream &operator<<(ostream &os, const HttpRequest &request) {
 
     return os;
 }
+
+char *HttpRequest::getContentPtr() const {
+    return contentPtr;
+}
+
+void HttpRequest::setContentPtr(char *contentPtr) {
+    HttpRequest::contentPtr = contentPtr;
+}
+
+unsigned int HttpRequest::getContentLength() const {
+    return contentLength;
+}
+
+void HttpRequest::setContentLength(unsigned int contentLength) {
+    HttpRequest::contentLength = contentLength;
+}
+
+unsigned int HttpRequest::getReceivedLength() const {
+    return receivedLength;
+}
+
+void HttpRequest::setReceivedLength(unsigned int receivedLength) {
+    HttpRequest::receivedLength = receivedLength;
+}
+
+void HttpRequest::reset() {
+    status = ParseState::EXPECT_REQUEST_LINE;
+    if (contentPtr != nullptr) {
+        free(contentPtr);
+        contentPtr = nullptr;
+        receivedLength = 0;
+    }
+}

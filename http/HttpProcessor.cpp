@@ -22,7 +22,6 @@ HandlerPropagate HttpProcessor::handle(Message *msg, Socket &socket, Message **r
         response.setMsg("Not Found!");
         response.setContent("Sorry, couldn't find the file!");
     } else {
-
         response.setSendFileOn(true);
         response.setSendFileName(filename);
         int fd = open(response.getSendFileName().c_str(), O_RDONLY);
@@ -42,6 +41,8 @@ void HttpProcessor::onComplete(Socket &socket) {
         sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
         close(fd);
     }
+
+    response.reset();
 }
 
 void HttpProcessor::onClose(Socket &socket) {

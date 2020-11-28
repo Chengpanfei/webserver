@@ -11,15 +11,45 @@ HandlerPropagate HttpDecoder::handle(Message *msg, Socket &socket, Message **res
     ByteBuffer &inBuffer = socket.getInBuffer();
     HttpRequest &request = requestMap[socket.getFd()];
 
-    char *lineEnd; // 指向行尾
-    while ((lineEnd = find(inBuffer.begin(), inBuffer.end(), '\r')) != inBuffer.end()
-           && *(lineEnd + 1) == '\n') {
+    while (true) {
+        if (request.getStatus() == ParseState::PARSING_CONTENT) {
+            unsigned int unreceivedLength = request.getContentLength() - request.getReceivedLength();
+            unsigned int planToRead = min(inBuffer.readableBytes(), unreceivedLength);
+
+            memcpy(request.getContentPtr() + request.getReceivedLength(), inBuffer.begin(), planToRead);
+            inBuffer.fetchNBytes(planToRead);
+            request.setReceivedLength(request.getReceivedLength() + planToRead);
+
+            if (request.getReceivedLength() == request.getContentLength()) {
+                request.setStatus(ParseState::EXPECT_REQUEST_LINE);
+                *result = &request;
+                return NEXT;
+            }
+            break;
+        }
+
+        // 不够一行
+        char *lineEnd = find(inBuffer.begin(), inBuffer.end(), '\r');
+        if (lineEnd == inBuffer.end() || *(lineEnd + 1) != '\n') break;
 
         if (lineEnd == inBuffer.begin()) {
+            // 读取到空白行
             inBuffer.fetchNBytes(2);
-            request.setStatus(ParseState::EXPECT_REQUEST_LINE);
-            *result = &request;
-            return HandlerPropagate::NEXT;
+            // 没有请求体
+            auto lengthPair = request.getHeaders().find("Content-Length");
+            if (lengthPair == request.getHeaders().end()) {
+                request.setStatus(ParseState::EXPECT_REQUEST_LINE);
+                *result = &request;
+                return HandlerPropagate::NEXT;
+            }
+
+            // TODO 错误处理
+            int contentLength = atoi(lengthPair->second.c_str());
+
+            request.setContentPtr((char *) malloc(contentLength));
+            request.setContentLength(contentLength);
+            request.setReceivedLength(0);
+            request.setStatus(ParseState::PARSING_CONTENT);
         } else if (request.getStatus() == ParseState::EXPECT_REQUEST_LINE) {
             // 解析请求行
             parseRequestLine(request, inBuffer.begin(), lineEnd);
@@ -61,6 +91,10 @@ void HttpDecoder::parseRequestLine(HttpRequest &request,
     request.setVersion(version);
 
     request.setStatus(ParseState::PARSING_HEADER);
+}
+
+void HttpDecoder::onComplete(Socket &socket) {
+    requestMap[socket.getFd()].reset();
 }
 
 void HttpDecoder::onClose(Socket &socket) {
