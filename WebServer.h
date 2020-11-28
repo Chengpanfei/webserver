@@ -23,15 +23,7 @@ public:
     WebServer(const string &host, const unsigned short &port)
             : port(port), host(host), eventLoop(host, port) {};
 
-    void start() {
-
-        // 注册处理器
-        eventLoop.registerInHandler(new HttpDecoder());
-        eventLoop.registerInHandler(new HttpProcessor());
-        eventLoop.registerOutHandler(new HttpEncoder());
-        // 开始事件循环
-        eventLoop.startLoop();
-    };
+    void start();;
 
     void stop();
 };

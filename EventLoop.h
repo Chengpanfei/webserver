@@ -10,7 +10,7 @@
 #include "Socket.h"
 #include "Handler.h"
 #include <sys/epoll.h>
-#include <vector>
+#include <list>
 
 class EventLoop {
 private:
@@ -19,8 +19,8 @@ private:
     ServerSocket serverSocket;
     epoll_event *events = nullptr;
 
-    vector<Handler *> inHandlers;
-    vector<Handler *> outHandlers;
+    list<Handler *> inHandlers;
+    list<Handler *> outHandlers;
 
     void handleServerSocketEvent();
 
@@ -40,7 +40,7 @@ public:
     }
 
     void registerOutHandler(Handler *handler) {
-        outHandlers.push_back(handler);
+        outHandlers.push_front(handler);
     }
 
 
