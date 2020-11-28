@@ -9,9 +9,17 @@
 #include "Socket.h"
 #include "Message.h"
 
+enum HandlerPropagate {
+    STOP, NEXT, REVERSE
+};
+
 class Handler {
 public:
-    virtual bool handle(Message *msg, Socket &socket, Message *result) = 0;
+    virtual HandlerPropagate handle(Message *msg, Socket &socket, Message **result) = 0;
+
+    virtual void onComplete(Socket &socket) {}
+
+    virtual void onClose(Socket &socket) {}
 };
 
 

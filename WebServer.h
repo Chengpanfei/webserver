@@ -7,7 +7,9 @@
 
 #include <string>
 #include "EventLoop.h"
-#include "HttpDecoder.h"
+#include "http/HttpDecoder.h"
+#include "http/HttpEncoder.h"
+#include "http/HttpProcessor.h"
 
 using namespace std;
 
@@ -22,7 +24,12 @@ public:
             : port(port), host(host), eventLoop(host, port) {};
 
     void start() {
+
+        // 注册处理器
         eventLoop.registerInHandler(new HttpDecoder());
+        eventLoop.registerInHandler(new HttpProcessor());
+        eventLoop.registerOutHandler(new HttpEncoder());
+        // 开始事件循环
         eventLoop.startLoop();
     };
 

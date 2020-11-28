@@ -46,8 +46,12 @@ public:
         return outBuffer;
     }
 
-    unsigned int fillInBuffer(){
+    int fillInBuffer(){
         return inBuffer.fill(fd);
+    }
+
+    int fetchOutBuffer(){
+        return outBuffer.fetch(fd);
     }
 
     void closeSocket(){

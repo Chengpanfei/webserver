@@ -60,3 +60,19 @@ void HttpResponse::setContentLength(int len) {
     setHeader("Content-Length", to_string(len));
 }
 
+bool HttpResponse::isSendFileOn() const {
+    return sendFileOn;
+}
+
+void HttpResponse::setSendFileOn(bool sendFile) {
+    HttpResponse::sendFileOn = sendFile;
+}
+
+const string &HttpResponse::getSendFileName() const {
+    return sendFileName;
+}
+
+void HttpResponse::setSendFileName(const string &sendFileName) {
+    HttpResponse::sendFileName = sendFileName;
+}
+

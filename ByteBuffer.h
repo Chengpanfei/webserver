@@ -47,6 +47,14 @@ public:
         return end_of_storage - writeIndex;
     }
 
+    unsigned int unusedBytes() {
+        return readIndex - begin_of_storage;
+    }
+
+    unsigned int readableBytes() {
+        return writeIndex - readIndex;
+    }
+
     char *begin() {
         return readIndex;
     }
@@ -59,14 +67,42 @@ public:
         readIndex += n;
     }
 
-    unsigned int fill(int fd) {
+    void fill(const char *buf, unsigned int size) {
+        while (true) {
+            if (writableBytes() >= size) {
+                memcpy(writeIndex, buf, size);
+                writeIndex += size;
+                return;
+            } else if (writableBytes() + unusedBytes() >= size) {
+                unsigned int readableNum = readableBytes();
+                memcpy(begin_of_storage, readIndex, readableNum);
+                readIndex = begin_of_storage;
+                writeIndex = readIndex + readableNum;
+                return;
+            } else {
+                resize();
+            }
+        }
+
+    }
+
+    int fetch(int fd) {
+        if (readableBytes() == 0) return 0;
+        int numWrite = write(fd, readIndex, readableBytes());
+
+        if (numWrite == -1) return numWrite;
+
+        readIndex += numWrite;
+        return numWrite;
+    }
+
+    int fill(int fd) {
         unsigned int writableBytes = end_of_storage - writeIndex;
         unsigned int unusedBytes = readIndex - begin_of_storage;
         unsigned int readableBytes = writeIndex - readIndex;
         // 还有可写的空间
         if (writableBytes > 0) {
-        }
-        else if (unusedBytes > 0) {// 还有未使用的空间
+        } else if (unusedBytes > 0) {// 还有未使用的空间
             memcpy(begin_of_storage, readIndex, readableBytes);
             readIndex = begin_of_storage;
             writeIndex = readIndex + readableBytes;

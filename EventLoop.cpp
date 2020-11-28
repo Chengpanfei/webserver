@@ -31,19 +31,49 @@ void EventLoop::handleConnectSocketEvent(Socket *socketPtr) {
     unsigned int numRead = socketPtr->fillInBuffer();
     if (numRead == 0) {
         // 读取到socket末尾
-        if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socketPtr->getFd(), nullptr) == -1) {
-            throw SocketException("Epoll del 出错！");
-        }
-        clog << "客户端关闭连接！fd:" << socketPtr->getFd() << endl;
-        free(socketPtr);
+        closeConnection(socketPtr);
         return;
     }
     // callback
-    Message *result = nullptr, *param = nullptr;
+    Message *result, **resultPtr = &result, *param = nullptr;
+    HandlerPropagate propagateType;
+
+    // 正向传播
     for (Handler *handler:inHandlers) {
-        if (handler->handle(param, *socketPtr, result))break;
-        param = result;
+        propagateType = handler->handle(param, *socketPtr, resultPtr);
+        param = *resultPtr;
+        if (propagateType != HandlerPropagate::NEXT) {
+            break;
+        }
     }
+
+    // 反向传播
+    if (propagateType == HandlerPropagate::REVERSE) {
+        for (Handler *handler: outHandlers) {
+            handler->handle(param, *socketPtr, resultPtr);
+            param = *resultPtr;
+        }
+
+        // 反向传播完成， 返回数据就会写入到outBuffer, 准备写入socketBuffer
+        epoll_event ev = {.events=EPOLLOUT, .data={.ptr=socketPtr}};
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+    }
+
+
+}
+
+void EventLoop::closeConnection(Socket *socketPtr) {
+    // 发送关闭信号， 让handlers有机会释放占用空间
+    for (Handler *handler:inHandlers) handler->onClose(*socketPtr);
+    for (Handler *handler:outHandlers)handler->onClose(*socketPtr);
+
+    if (epoll_ctl(epoll_fd, EPOLL_CTL_DEL, socketPtr->getFd(), nullptr) == -1) {
+        throw SocketException("Epoll del 出错！");
+    }
+    close(socketPtr->getFd());
+    delete socketPtr;
+    clog << "客户端关闭连接！fd:" << socketPtr->getFd() << endl;
+
 }
 
 EventLoop::EventLoop(const string &host, const unsigned short &port)
@@ -81,11 +111,36 @@ void EventLoop::startLoop() {
         for (int i = 0; i < nfd; ++i) {
             auto *socketPtr = (Socket *) events[i].data.ptr;
             if (socketPtr->getFd() == serverSocket.getFd()) {
-                // 处理服务端socket事件
+                // 处理accept事件
                 handleServerSocketEvent();
-            } else {
+            } else if (events[i].events == EPOLLIN) {
+                // 处理读事件
                 handleConnectSocketEvent(socketPtr);
+            } else {
+                // 处理写事件
+                handlerWriteEvent(socketPtr);
             }
+
         }// for
     }//while
+}
+
+void EventLoop::handlerWriteEvent(Socket *socketPtr) {
+    int numWrite = socketPtr->fetchOutBuffer();
+    if (numWrite == -1) {
+        if (errno == EPIPE) {
+            // 对方已关闭
+            closeConnection(socketPtr);
+            return;
+        }
+        throw SocketException("写数据出错");
+    }
+    epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
+    if (numWrite == 0) {
+        // 发送写完事件给handlers， 让handlers有机会处理一些事情
+        for (Handler *handler:inHandlers) handler->onComplete(*socketPtr);
+        for (Handler *handler:outHandlers)handler->onComplete(*socketPtr);
+        // 重新监听可读事件
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+    }
 }

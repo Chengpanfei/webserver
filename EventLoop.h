@@ -20,6 +20,7 @@ private:
     epoll_event *events = nullptr;
 
     vector<Handler *> inHandlers;
+    vector<Handler *> outHandlers;
 
     void handleServerSocketEvent();
 
@@ -31,15 +32,23 @@ public:
     ~EventLoop() {
         if (events) free(events);
         for (auto handler:inHandlers)free(handler);
+        for (auto handler:outHandlers)free(handler);
     }
 
     void registerInHandler(Handler *handler) {
         inHandlers.push_back(handler);
     }
 
+    void registerOutHandler(Handler *handler) {
+        outHandlers.push_back(handler);
+    }
+
 
     void startLoop();
 
+    void closeConnection(Socket *socketPtr) ;
+
+    void handlerWriteEvent(Socket *pSocket);
 };
 
 

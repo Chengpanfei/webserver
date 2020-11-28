@@ -7,7 +7,7 @@
 
 #include <string>
 #include <unordered_map>
-#include "Message.h"
+#include "../Message.h"
 
 using namespace std;
 
@@ -16,6 +16,9 @@ private:
     string version;
     string code;
     string msg;
+
+    bool sendFileOn;
+    string sendFileName;
 
     unsigned int contentLength;
     char *contentPtr;
@@ -60,6 +63,15 @@ public:
     void setContentLength(int len);
 
     char *getContentPtr() const;
+
+    bool isSendFileOn() const;
+
+    void setSendFileOn(bool sendFile);
+
+    const string &getSendFileName() const;
+
+    void setSendFileName(const string &sendFileName);
+
 };
 
 
