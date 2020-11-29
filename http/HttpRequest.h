@@ -46,6 +46,7 @@ public:
     }
 
     void reset();
+
     ParseState getStatus() const;
 
     void setStatus(const ParseState &status);

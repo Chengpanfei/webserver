@@ -113,5 +113,6 @@ void HttpRequest::reset() {
         free(contentPtr);
         contentPtr = nullptr;
         receivedLength = 0;
+        contentLength = 0;
     }
 }

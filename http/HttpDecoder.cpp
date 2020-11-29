@@ -62,7 +62,6 @@ HandlerPropagate HttpDecoder::handle(Message *msg, Socket &socket, Message **res
 
         }
         unsigned int lineLength = lineEnd - inBuffer.begin() + 2;
-        write(STDOUT_FILENO, inBuffer.begin(), lineLength);
         inBuffer.fetchNBytes(lineLength);
     }
 
@@ -71,6 +70,7 @@ HandlerPropagate HttpDecoder::handle(Message *msg, Socket &socket, Message **res
 
 void HttpDecoder::parseRequestLine(HttpRequest &request,
                                    const char *lineBegin, const char *lineEnd) {
+    write(STDOUT_FILENO, lineBegin, lineEnd - lineBegin);
     // 获取请求方法
     auto first_space = find(lineBegin, lineEnd, ' ');
     string method(lineBegin, first_space);

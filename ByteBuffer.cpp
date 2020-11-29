@@ -15,7 +15,6 @@ void ByteBuffer::fill(const char *buf, unsigned int size) {
             memcpy(begin_of_storage, readIndex, readableNum);
             readIndex = begin_of_storage;
             writeIndex = readIndex + readableNum;
-            return;
         } else {
             resize();
         }
@@ -67,3 +66,4 @@ void ByteBuffer::resize() {
     writeIndex = readIndex + readableBytes;
     clog << "扩容后：" << newSize << endl;
 }
+

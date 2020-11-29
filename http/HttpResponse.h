@@ -17,11 +17,11 @@ private:
     string code;
     string msg;
 
-    bool sendFileOn;
+    bool sendFileOn{};
     string sendFileName;
 
-    unsigned int contentLength;
-    char *contentPtr;
+    unsigned int contentLength{};
+    char *contentPtr{};
 
     unordered_map<string, string> headers;
 
@@ -34,7 +34,7 @@ public:
             : version("HTTP/1.1"), code("200"),
               msg("OK"), contentPtr(nullptr), contentLength(0) {}
 
-    ~HttpResponse() {
+    ~HttpResponse() override {
         if (contentPtr != nullptr) {
             free(contentPtr);
         }
