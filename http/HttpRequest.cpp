@@ -111,8 +111,18 @@ void HttpRequest::reset() {
     status = ParseState::EXPECT_REQUEST_LINE;
     if (contentPtr != nullptr) {
         free(contentPtr);
+        headers.clear();
         contentPtr = nullptr;
         receivedLength = 0;
         contentLength = 0;
+        keepAlive = true;
     }
+}
+
+bool HttpRequest::isKeepAlive() const {
+    return keepAlive;
+}
+
+void HttpRequest::setKeepAlive(bool keepAlive) {
+    HttpRequest::keepAlive = keepAlive;
 }

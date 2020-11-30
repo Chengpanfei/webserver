@@ -25,9 +25,11 @@ private:
     string query;
     string version;
 
-    char *contentPtr;
-    unsigned int contentLength;
-    unsigned int receivedLength;
+    bool keepAlive{true};
+
+    char *contentPtr; // 指向请求体的指针
+    unsigned int contentLength; // 请求体的长度
+    unsigned int receivedLength; // 已经读取的请求体的长度
 
     int ip;
     short port;
@@ -90,6 +92,10 @@ public:
     unsigned int getReceivedLength() const;
 
     void setReceivedLength(unsigned int receivedLength);
+
+    bool isKeepAlive() const;
+
+    void setKeepAlive(bool keepAlive);
 
     friend ostream &operator<<(ostream &os, const HttpRequest &request);
 };

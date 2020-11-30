@@ -67,15 +67,15 @@ HandlerPropagate HttpProcessor::handle(Message *msg, Socket &socket, Message **r
     return HandlerPropagate::REVERSE;
 }
 
-void HttpProcessor::onComplete(Socket &socket) {
+HandlerPropagate HttpProcessor::onComplete(Socket &socket) {
     HttpResponse &response = responseMap[socket.getFd()];
     if (response.isSendFileOn()) {
         int fd = open(response.getSendFileName().c_str(), O_RDONLY);
         sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
         close(fd);
     }
-
     response.reset();
+    return HandlerPropagate::NEXT;
 }
 
 void HttpProcessor::onClose(Socket &socket) {

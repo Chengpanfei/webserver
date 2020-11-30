@@ -141,8 +141,19 @@ void EventLoop::handleWriteEvent(Socket *socketPtr) {
     }
     if (numWrite == 0) {
         // 发送写完事件给handlers， 让handlers有机会处理一些事情
-        for (Handler *handler:inHandlers) handler->onComplete(*socketPtr);
-        for (Handler *handler:outHandlers)handler->onComplete(*socketPtr);
+        for (Handler *handler:inHandlers) {
+            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE) {
+                closeConnection(socketPtr);
+                return;
+            };
+        }
+        for (Handler *handler:outHandlers) {
+            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE) {
+                closeConnection(socketPtr);
+                return;
+            };
+        }
+
         // 重新监听可读事件
         epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
         epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);

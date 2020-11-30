@@ -58,6 +58,10 @@ HandlerPropagate HttpDecoder::handle(Message *msg, Socket &socket, Message **res
             string key(inBuffer.begin(), colon_pos);
             string val(colon_pos + 1, lineEnd);
             request.setHeader(key, val);
+
+            if (key == "Connection") {
+                request.setKeepAlive(val == "Keep-Alive");
+            }
         } else {
 
         }
@@ -89,12 +93,18 @@ void HttpDecoder::parseRequestLine(HttpRequest &request,
     request.setMethod(method);
     request.setPath(path);
     request.setVersion(version);
-
+    // 1.0版本默认不开启keepalive
+    if (version == "HTTP/1.0") request.setKeepAlive(false);
     request.setStatus(ParseState::PARSING_HEADER);
 }
 
-void HttpDecoder::onComplete(Socket &socket) {
-    requestMap[socket.getFd()].reset();
+HandlerPropagate HttpDecoder::onComplete(Socket &socket) {
+    HttpRequest &request = requestMap[socket.getFd()];
+    if (!request.isKeepAlive()) {
+        return HandlerPropagate::CLOSE;
+    }
+    request.reset();
+    return HandlerPropagate::NEXT;
 }
 
 void HttpDecoder::onClose(Socket &socket) {

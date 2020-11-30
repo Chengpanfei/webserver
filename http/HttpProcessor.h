@@ -16,7 +16,7 @@ private:
 public:
     HandlerPropagate handle(Message *msg, Socket &socket, Message **result) override;
 
-    void onComplete(Socket &socket) override;
+    HandlerPropagate onComplete(Socket &socket) override;
 
     void onClose(Socket &socket) override;
 };
