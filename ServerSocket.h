@@ -5,13 +5,14 @@
 #ifndef WEBSERVER_SERVERSOCKET_H
 #define WEBSERVER_SERVERSOCKET_H
 
-#include <string>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include "SocketException.h"
 #include <iostream>
+#include <string>
+#include <fcntl.h>
 
 using namespace std;
 

@@ -22,9 +22,9 @@ private:
     list<Handler *> inHandlers;
     list<Handler *> outHandlers;
 
-    void handleServerSocketEvent();
+    void handleAcceptEvent();
 
-    void handleConnectSocketEvent(Socket *socketPtr);
+    void handleReadEvent(Socket *socketPtr);
 
 public:
     EventLoop(const string &host, const unsigned short &port);
@@ -48,7 +48,7 @@ public:
 
     void closeConnection(Socket *socketPtr) ;
 
-    void handlerWriteEvent(Socket *pSocket);
+    void handleWriteEvent(Socket *socketPtr);
 };
 
 

@@ -4,6 +4,7 @@
 
 #include "ServerSocket.h"
 
+
 ServerSocket::ServerSocket(const string &host, const unsigned short &port)
         : host(host), port(port) {
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -25,6 +26,10 @@ ServerSocket::ServerSocket(const string &host, const unsigned short &port)
         throw SocketException("Listen 出错！");
     }
     clog << "listen成功， fd：" << socket_fd << endl;
+
+    // 设置为非阻塞
+    int flags = fcntl(socket_fd, F_GETFL, 0);
+    fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
 
     this->fd = socket_fd;
 }

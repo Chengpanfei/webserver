@@ -4,16 +4,20 @@
 
 #include "EventLoop.h"
 
-void EventLoop::handleServerSocketEvent() {
+void EventLoop::handleAcceptEvent() {
     // 接收客户端地址信息
     sockaddr_in client_addr = {};
     socklen_t client_addr_len = sizeof(client_addr);
     int client_fd = accept(serverSocket.getFd(), (sockaddr *) &client_addr, &client_addr_len);
 
     if (client_fd == -1) {
-        if (errno == EAGAIN) return;
+        if (errno == EAGAIN) return; // 惊群
         throw SocketException("accept 出错");
     }
+
+    // 设置为非阻塞
+    int flags = fcntl(client_fd, F_GETFL, 0);
+    fcntl(client_fd, F_SETFL, flags | O_NONBLOCK, 0);
 
     // 为client socket分配空间
     auto *ptr = new Socket(inet_ntoa(client_addr.sin_addr), client_addr.sin_port, client_fd);
@@ -27,7 +31,7 @@ void EventLoop::handleServerSocketEvent() {
     }
 }
 
-void EventLoop::handleConnectSocketEvent(Socket *socketPtr) {
+void EventLoop::handleReadEvent(Socket *socketPtr) {
     unsigned int numRead = socketPtr->fillInBuffer();
     if (numRead == 0) {
         // 读取到socket末尾
@@ -112,20 +116,20 @@ void EventLoop::startLoop() {
             auto *socketPtr = (Socket *) events[i].data.ptr;
             if (socketPtr->getFd() == serverSocket.getFd()) {
                 // 处理accept事件
-                handleServerSocketEvent();
+                handleAcceptEvent();
             } else if (events[i].events == EPOLLIN) {
                 // 处理读事件
-                handleConnectSocketEvent(socketPtr);
+                handleReadEvent(socketPtr);
             } else {
                 // 处理写事件
-                handlerWriteEvent(socketPtr);
+                handleWriteEvent(socketPtr);
             }
 
         }// for
     }//while
 }
 
-void EventLoop::handlerWriteEvent(Socket *socketPtr) {
+void EventLoop::handleWriteEvent(Socket *socketPtr) {
     int numWrite = socketPtr->fetchOutBuffer();
     if (numWrite == -1) {
         if (errno == EPIPE) {
@@ -135,12 +139,12 @@ void EventLoop::handlerWriteEvent(Socket *socketPtr) {
         }
         throw SocketException("写数据出错");
     }
-    epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
     if (numWrite == 0) {
         // 发送写完事件给handlers， 让handlers有机会处理一些事情
         for (Handler *handler:inHandlers) handler->onComplete(*socketPtr);
         for (Handler *handler:outHandlers)handler->onComplete(*socketPtr);
         // 重新监听可读事件
+        epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
         epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
     }
 }

@@ -32,7 +32,9 @@ private:
 public:
     HttpResponse()
             : version("HTTP/1.1"), code("200"),
-              msg("OK"), contentPtr(nullptr), contentLength(0) {}
+              msg("OK"), contentPtr(nullptr), contentLength(0) {
+        headers["Server"] = "Netty4Cpp";
+    }
 
     ~HttpResponse() override {
         if (contentPtr != nullptr) {
