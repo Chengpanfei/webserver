@@ -27,9 +27,9 @@ private:
 
     bool keepAlive{true};
 
-    char *contentPtr; // 指向请求体的指针
-    unsigned int contentLength; // 请求体的长度
-    unsigned int receivedLength; // 已经读取的请求体的长度
+    char *contentPtr{nullptr}; // 指向请求体的指针
+    unsigned int contentLength{0}; // 请求体的长度
+    unsigned int receivedLength{0}; // 已经读取的请求体的长度
 
     int ip;
     short port;
@@ -43,9 +43,7 @@ private:
 public:
     HttpRequest();
 
-    ~HttpRequest() override {
-        if (contentPtr) free(contentPtr);
-    }
+    ~HttpRequest() override;
 
     void reset();
 

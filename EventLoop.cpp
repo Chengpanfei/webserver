@@ -29,10 +29,15 @@ void EventLoop::handleAcceptEvent() {
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
         throw SocketException("epoll add 失败");
     }
+
+    clog << "Accept new fd:" << ptr->getFd() << endl;
 }
 
 void EventLoop::handleReadEvent(Socket *socketPtr) {
     unsigned int numRead = socketPtr->fillInBuffer();
+    if (numRead < 0) {
+        throw SocketException("read失败！");
+    }
     if (numRead == 0) {
         // 读取到socket末尾
         closeConnection(socketPtr);
@@ -60,7 +65,8 @@ void EventLoop::handleReadEvent(Socket *socketPtr) {
 
         // 反向传播完成， 返回数据就会写入到outBuffer, 准备写入socketBuffer
         epoll_event ev = {.events=EPOLLOUT, .data={.ptr=socketPtr}};
-        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        int res = epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        clog << "切换写:" << res << endl;
     }
 
 
@@ -75,8 +81,8 @@ void EventLoop::closeConnection(Socket *socketPtr) {
         throw SocketException("Epoll del 出错！");
     }
     close(socketPtr->getFd());
+    clog << "close:" << socketPtr->getFd() << endl;
     delete socketPtr;
-    clog << "客户端关闭连接！fd:" << socketPtr->getFd() << endl;
 
 }
 
@@ -102,7 +108,7 @@ EventLoop::EventLoop(const string &host, const unsigned short &port)
 
 void EventLoop::startLoop() {
     while (true) {
-        clog << "epoll waiting....fd:" << epoll_fd << endl;
+        clog << endl << "epoll waiting....fd:" << epoll_fd << endl;
         int nfd = epoll_wait(epoll_fd, events, maxEventNum, -1);
         if (nfd == -1) {
             if (errno == EAGAIN) {
@@ -113,11 +119,11 @@ void EventLoop::startLoop() {
         }
 
         for (int i = 0; i < nfd; ++i) {
-            auto *socketPtr = (Socket *) events[i].data.ptr;
+            auto socketPtr = (Socket *) events[i].data.ptr;
             if (socketPtr->getFd() == serverSocket.getFd()) {
                 // 处理accept事件
                 handleAcceptEvent();
-            } else if (events[i].events == EPOLLIN) {
+            } else if (events[i].events & EPOLLIN) {
                 // 处理读事件
                 handleReadEvent(socketPtr);
             } else {
@@ -141,21 +147,23 @@ void EventLoop::handleWriteEvent(Socket *socketPtr) {
     }
     if (numWrite == 0) {
         // 发送写完事件给handlers， 让handlers有机会处理一些事情
+        bool needClose = false;
         for (Handler *handler:inHandlers) {
-            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE) {
-                closeConnection(socketPtr);
-                return;
-            };
+            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE)
+                needClose = true;
         }
         for (Handler *handler:outHandlers) {
-            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE) {
-                closeConnection(socketPtr);
-                return;
-            };
+            if (handler->onComplete(*socketPtr) == HandlerPropagate::CLOSE)
+                needClose = true;
         }
 
+        if (needClose) {
+            closeConnection(socketPtr);
+            return;
+        }
         // 重新监听可读事件
         epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
-        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        int res = epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        clog << " 切换读:" << res << endl;
     }
 }

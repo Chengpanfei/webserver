@@ -25,7 +25,7 @@ HandlerPropagate HttpProcessor::handle(Message *msg, Socket &socket, Message **r
     if (err == -1) {
         if (errno == ENOENT) {
             response.setCode("404");
-            response.setMsg("Not Found!");
+            response.setMsg("Not Found");
             response.setContent("Sorry, couldn't find the file!");
         } else {
             // 无法读取文件
@@ -33,7 +33,7 @@ HandlerPropagate HttpProcessor::handle(Message *msg, Socket &socket, Message **r
         }
     }
 
-    if (S_ISDIR(st.st_mode)) {
+    else if (S_ISDIR(st.st_mode)) {
         // 请求地址是目录
         DIR *dir = opendir(filename.c_str());
         if (dir == nullptr) {
@@ -71,7 +71,8 @@ HandlerPropagate HttpProcessor::onComplete(Socket &socket) {
     HttpResponse &response = responseMap[socket.getFd()];
     if (response.isSendFileOn()) {
         int fd = open(response.getSendFileName().c_str(), O_RDONLY);
-        sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
+        int res = sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
+        clog << "SendFile res: " << res << endl;
         close(fd);
     }
     response.reset();

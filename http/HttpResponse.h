@@ -21,14 +21,14 @@ private:
     string sendFileName;
 
     unsigned int contentLength{};
-    char *contentPtr{};
+    char *contentPtr{nullptr};
 
     unordered_map<string, string> headers;
 
-    HttpResponse(const HttpResponse &rep) {}
-
-    HttpResponse &operator=(const HttpResponse &rep) {}
-
+    // 禁止拷贝构造
+    HttpResponse(const HttpResponse &rep) ;
+    // 禁止拷贝赋值
+    HttpResponse &operator=(const HttpResponse &rep) ;
 public:
     HttpResponse()
             : version("HTTP/1.1"), code("200"),

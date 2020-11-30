@@ -76,7 +76,7 @@ ostream &operator<<(ostream &os, const HttpRequest &request) {
        << request.query << " version: " << request.version << " ip: " << request.ip << " port: " << request.port
        << endl;
     os << "Headers -> " << endl;
-    for (auto i: request.headers) {
+    for (auto &i: request.headers) {
         os << i.first << ":" << i.second << endl;
     }
 
@@ -88,6 +88,7 @@ char *HttpRequest::getContentPtr() const {
 }
 
 void HttpRequest::setContentPtr(char *contentPtr) {
+    if (contentPtr != nullptr) free(contentPtr);
     HttpRequest::contentPtr = contentPtr;
 }
 
@@ -125,4 +126,8 @@ bool HttpRequest::isKeepAlive() const {
 
 void HttpRequest::setKeepAlive(bool keepAlive) {
     HttpRequest::keepAlive = keepAlive;
+}
+
+HttpRequest::~HttpRequest() {
+    if (contentPtr) free(contentPtr);
 }

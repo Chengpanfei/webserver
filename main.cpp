@@ -2,7 +2,7 @@
 #include "WebServer.h"
 
 int main() {
-    try{
+    try {
         WebServer webServer("0.0.0.0", 8888);
         webServer.start();
     } catch (SocketException &exception) {

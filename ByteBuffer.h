@@ -41,10 +41,6 @@ public:
         free(begin_of_storage);
     }
 
-    char *data() {
-        return readIndex;
-    }
-
     unsigned int writableBytes() {
         return end_of_storage - writeIndex;
     }

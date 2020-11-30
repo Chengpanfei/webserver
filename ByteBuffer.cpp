@@ -27,7 +27,7 @@ int ByteBuffer::fetch(int fd) {
     int numWrite = write(fd, readIndex, readableBytes());
 
     if (numWrite == -1) return numWrite;
-
+    clog.write(readIndex, readableBytes());
     readIndex += numWrite;
     return numWrite;
 }
@@ -47,6 +47,8 @@ int ByteBuffer::fill(int fd) {
     }
 
     int numRead = read(fd, writeIndex, end_of_storage - writeIndex);
+    if (numRead < 0) return numRead;
+    clog.write(writeIndex, numRead);
     writeIndex += numRead;
     return numRead;
 
