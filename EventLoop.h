@@ -17,7 +17,8 @@ private:
     int epoll_fd;
     int maxEventNum = 100;
     ServerSocket serverSocket;
-    epoll_event *events = nullptr;
+    Socket *serverPtr{nullptr};
+    epoll_event *events{nullptr};
 
     list<Handler *> inHandlers;
     list<Handler *> outHandlers;
@@ -31,6 +32,7 @@ public:
 
     ~EventLoop() {
         if (events) free(events);
+        if (serverPtr) free(serverPtr);
         for (auto handler:inHandlers)free(handler);
         for (auto handler:outHandlers)free(handler);
     }
@@ -44,9 +46,9 @@ public:
     }
 
 
-    void startLoop();
+    void startLoop();;
 
-    void closeConnection(Socket *socketPtr) ;
+    void closeConnection(Socket *socketPtr);
 
     void handleWriteEvent(Socket *socketPtr);
 };

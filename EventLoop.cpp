@@ -20,17 +20,17 @@ void EventLoop::handleAcceptEvent() {
     fcntl(client_fd, F_SETFL, flags | O_NONBLOCK, 0);
 
     // 为client socket分配空间
-    auto *ptr = new Socket(inet_ntoa(client_addr.sin_addr), client_addr.sin_port, client_fd);
+    auto clientPtr = new Socket(inet_ntoa(client_addr.sin_addr), client_addr.sin_port, client_fd);
     epoll_event ev = {
             .events = EPOLLIN,
-            .data={ptr}
+            .data={.ptr=clientPtr}
     };
 
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
         throw SocketException("epoll add 失败");
     }
 
-    clog << "Accept new fd:" << ptr->getFd() << endl;
+    clog << "Accept new fd:" << clientPtr->getFd() << endl;
 }
 
 void EventLoop::handleReadEvent(Socket *socketPtr) {
@@ -83,7 +83,6 @@ void EventLoop::closeConnection(Socket *socketPtr) {
     close(socketPtr->getFd());
     clog << "close:" << socketPtr->getFd() << endl;
     delete socketPtr;
-
 }
 
 EventLoop::EventLoop(const string &host, const unsigned short &port)
@@ -97,8 +96,8 @@ EventLoop::EventLoop(const string &host, const unsigned short &port)
     }
     clog << "epoll创建成功， fd：" << epoll_fd << endl;
 
-    auto *ptr = new Socket(serverSocket);
-    epoll_event ev = {.events = EPOLLIN, .data = {ptr}};
+    serverPtr = new Socket(serverSocket);
+    epoll_event ev = {.events = EPOLLIN, .data = {serverPtr}};
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serverSocket.getFd(), &ev)) {
         throw SocketException("监听服务端socket失败！");
     }
@@ -167,3 +166,4 @@ void EventLoop::handleWriteEvent(Socket *socketPtr) {
         clog << " 切换读:" << res << endl;
     }
 }
+
