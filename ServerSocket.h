@@ -13,6 +13,7 @@
 #include <iostream>
 #include <string>
 #include <fcntl.h>
+#include "Logger.h"
 
 using namespace std;
 

@@ -71,8 +71,7 @@ HandlerPropagate HttpProcessor::onComplete(Socket &socket) {
     HttpResponse &response = responseMap[socket.getFd()];
     if (response.isSendFileOn()) {
         int fd = open(response.getSendFileName().c_str(), O_RDONLY);
-        int res = sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
-        clog << "SendFile res: " << res << endl;
+        sendfile(socket.getFd(), fd, nullptr, response.getContentLength());
         close(fd);
     }
     response.reset();

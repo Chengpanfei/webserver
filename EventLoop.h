@@ -11,6 +11,8 @@
 #include "Handler.h"
 #include <sys/epoll.h>
 #include <list>
+#include <csignal>
+#include "Logger.h"
 
 class EventLoop {
 private:

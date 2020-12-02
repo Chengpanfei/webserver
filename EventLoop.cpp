@@ -29,8 +29,7 @@ void EventLoop::handleAcceptEvent() {
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &ev) == -1) {
         throw SocketException("epoll add 失败");
     }
-
-    clog << "Accept new fd:" << clientPtr->getFd() << endl;
+    Logger::debug("New connection accepted! fd: %d", clientPtr->getFd());
 }
 
 void EventLoop::handleReadEvent(Socket *socketPtr) {
@@ -65,8 +64,8 @@ void EventLoop::handleReadEvent(Socket *socketPtr) {
 
         // 反向传播完成， 返回数据就会写入到outBuffer, 准备写入socketBuffer
         epoll_event ev = {.events=EPOLLOUT, .data={.ptr=socketPtr}};
-        int res = epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
-        clog << "切换写:" << res << endl;
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        Logger::debug("Switch to write mode, fd: %d", socketPtr->getFd());
     }
 
 
@@ -81,7 +80,7 @@ void EventLoop::closeConnection(Socket *socketPtr) {
         throw SocketException("Epoll del 出错！");
     }
     close(socketPtr->getFd());
-    clog << "close:" << socketPtr->getFd() << endl;
+    Logger::debug("close connection, fd: %d", socketPtr->getFd());
     delete socketPtr;
 }
 
@@ -94,20 +93,19 @@ EventLoop::EventLoop(const string &host, const unsigned short &port)
     if (epoll_fd == -1) {
         throw SocketException("epoll创建失败！");
     }
-    clog << "epoll创建成功， fd：" << epoll_fd << endl;
+    Logger::info("Success to create epoll, fd: %d", epoll_fd);
 
     serverPtr = new Socket(serverSocket);
     epoll_event ev = {.events = EPOLLIN, .data = {serverPtr}};
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, serverSocket.getFd(), &ev)) {
         throw SocketException("监听服务端socket失败！");
     }
-    clog << "epoll add server成功， fd：" << epoll_fd << endl;
-
+    Logger::debug("Add server fd to epoll, epoll_fd: %d, server_fd: %d", epoll_fd, serverPtr->getFd());
 }
 
 void EventLoop::startLoop() {
     while (true) {
-        clog << endl << "epoll waiting....fd:" << epoll_fd << endl;
+        Logger::debug("epoll waiting for events");
         int nfd = epoll_wait(epoll_fd, events, maxEventNum, -1);
         if (nfd == -1) {
             if (errno == EAGAIN) {
@@ -162,8 +160,8 @@ void EventLoop::handleWriteEvent(Socket *socketPtr) {
         }
         // 重新监听可读事件
         epoll_event ev = {.events=EPOLLIN, .data={.ptr=socketPtr}};
-        int res = epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
-        clog << " 切换读:" << res << endl;
+        epoll_ctl(epoll_fd, EPOLL_CTL_MOD, socketPtr->getFd(), &ev);
+        Logger::debug("Switch to read mode! fd: %d ", socketPtr->getFd());
     }
 }
 
